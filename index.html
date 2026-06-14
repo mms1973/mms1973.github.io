@@ -1,49 +1,567 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena — compare AI models side by side</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-  <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="Mms1973.GitHub.io : Marcos Martinez&#39;s web page">
+  :root{
+    --bg: #10131a;
+    --surface: #181c25;
+    --surface-2: #1f2430;
+    --border: #2a313e;
+    --text: #e9ecf2;
+    --text-dim: #8b94a3;
+    --text-faint: #5b6473;
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    --claude: #d97757;
+    --openai: #74aa9c;
+    --gemini: #5e9bf7;
+    --grok: #c9ccd3;
+    --deepseek: #6f7bf7;
 
-    <title>Mms1973.GitHub.io</title>
-  </head>
+    --radius: 10px;
+  }
 
-  <body>
+  *{ box-sizing: border-box; }
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/mms1973">View on GitHub</a>
+  body{
+    margin:0;
+    background: var(--bg);
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-          <h1 id="project_title">Mms1973.GitHub.io</h1>
-          <h2 id="project_tagline">Marcos Martinez&#39;s web page</h2>
+  .wrap{
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 22px 20px 60px;
+  }
 
-        </header>
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .brand{ display:flex; align-items:center; gap: 10px; }
+  .brand .mark{
+    width: 30px; height:30px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--claude), var(--gemini));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:15px; color:#10131a;
+  }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 19px; font-weight: 700; margin: 0; letter-spacing: 0.2px;
+  }
+  .brand .sub{
+    font-size: 12px; color: var(--text-dim);
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  nav{ display:flex; gap: 4px; align-items:center; }
+  nav button{
+    background: none; border: 1px solid transparent; color: var(--text-dim);
+    font-family:'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 7px 14px; border-radius: 7px; cursor: pointer; transition: all .15s ease;
+  }
+  nav button:hover{ color: var(--text); background: var(--surface-2); }
+  nav button.active{ color: var(--text); background: var(--surface-2); border-color: var(--border); }
+
+  .gear{
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+    width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    display:flex; align-items:center; justify-content:center; font-size: 16px;
+    transition: all .15s ease;
+  }
+  .gear:hover{ color: var(--text); border-color: var(--text-faint); }
+
+  /* ---------- Composer ---------- */
+  .composer{
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 4px; margin-bottom: 26px;
+  }
+  .composer textarea{
+    width: 100%; background: transparent; border: none; outline: none;
+    resize: vertical; min-height: 64px; max-height: 220px;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px;
+    line-height: 1.5; padding: 14px 14px 4px;
+  }
+  .composer textarea::placeholder{ color: var(--text-faint); }
+  .composer-bar{
+    display:flex; align-items:center; justify-content: space-between; padding: 6px 12px 10px;
+  }
+  .token-count{ font-family:'JetBrains Mono', monospace; font-size: 12px; color: var(--text-faint); }
+  .composer-actions{ display:flex; gap: 8px; }
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px;
+    border-radius: 7px; padding: 8px 18px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    display:flex; align-items:center; gap:6px; transition: all .15s ease;
+  }
+  .btn:hover{ border-color: var(--text-faint); }
+  .btn.primary{
+    background: linear-gradient(135deg, var(--claude), #c2654a);
+    border: none; color: #1a0e08;
+  }
+  .btn.primary:hover{ filter: brightness(1.08); }
+  .btn.primary:disabled{ opacity: .5; cursor: default; filter:none; }
+  .btn:disabled{ opacity:.5; cursor:default; }
+
+  /* ---------- Results grid ---------- */
+  .grid{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px;
+  }
+  .card{
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow:hidden; display:flex; flex-direction:column; min-height: 220px;
+  }
+  .card-head{
+    display:flex; align-items:center; justify-content: space-between;
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+  }
+  .card-head .name{
+    display:flex; align-items:center; gap: 8px;
+    font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px;
+  }
+  .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .timer{
+    font-family:'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim);
+    display:flex; align-items:center; gap:6px;
+  }
+  .timer .pulse{ width:6px; height:6px; border-radius:50%; background: var(--text-faint); }
+  .timer.live .pulse{ background: #5ee6a0; animation: pulse 1s infinite ease-in-out; }
+  @keyframes pulse{
+    0%,100%{ opacity:1; transform: scale(1); }
+    50%{ opacity:.35; transform: scale(0.7); }
+  }
+
+  .progress{ height: 2px; width: 100%; background: var(--border); position: relative; overflow:hidden; }
+  .progress .fill{ position:absolute; top:0; left:0; bottom:0; width: 30%; border-radius: 2px; }
+  .progress.running .fill{ animation: race 1.2s infinite linear; }
+  @keyframes race{ 0%{ left: -30%; } 100%{ left: 100%; } }
+
+  .card-body{
+    padding: 14px; font-size: 13.5px; line-height: 1.6; color: var(--text);
+    overflow-y: auto; max-height: 420px; flex: 1; white-space: pre-wrap;
+  }
+  .card-body.placeholder{ color: var(--text-faint); font-style: italic; font-size: 13px; }
+  .card-body.error{ color: #f08a8a; font-size: 13px; }
+  .card-body::-webkit-scrollbar{ width: 6px; }
+  .card-body::-webkit-scrollbar-thumb{ background: var(--border); border-radius: 3px; }
+
+  /* empty state */
+  .empty{ text-align:center; padding: 70px 20px; color: var(--text-faint); }
+  .empty .icon{
+    width: 46px; height:46px; margin: 0 auto 16px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size: 20px;
+  }
+  .empty h2{
+    font-family:'Space Grotesk', sans-serif; font-size: 16px; color: var(--text-dim);
+    margin: 0 0 6px; font-weight: 600;
+  }
+  .empty p{ font-size: 13px; margin: 0; max-width: 360px; margin: 0 auto; line-height:1.6; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop{
+    position: fixed; inset:0; background: rgba(10,12,16,0.6);
+    display:none; align-items:center; justify-content:center; z-index: 50; padding: 16px;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    width: 100%; max-width: 460px; padding: 20px;
+  }
+  .modal h3{ font-family:'Space Grotesk', sans-serif; margin: 0 0 4px; font-size: 16px; }
+  .modal p.note{ font-size: 12px; color: var(--text-dim); margin: 0 0 16px; line-height: 1.5; }
+  .status-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .status-row:last-child{ border-bottom:none; }
+  .status-row .name{ display:flex; align-items:center; gap:8px; font-weight:600; font-family:'Space Grotesk', sans-serif; }
+  .status-pill{
+    font-family:'JetBrains Mono', monospace; font-size: 11px; padding: 3px 8px; border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  .status-pill.ok{ color:#5ee6a0; border-color: rgba(94,230,160,0.3); }
+  .status-pill.missing{ color:#f0b35e; border-color: rgba(240,179,94,0.3); }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top: 16px; }
+
+  /* ---------- History / Stats ---------- */
+  .history-item{
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 10px;
+  }
+  .history-item .prompt{ font-size: 13.5px; margin-bottom: 8px; color: var(--text); }
+  .history-item .meta{
+    font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
+    display:flex; gap: 14px; flex-wrap:wrap;
+  }
+  .history-toolbar{ display:flex; justify-content:flex-end; margin-bottom: 12px; }
+
+  .stats-grid{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px; margin-bottom: 20px;
+  }
+  .stat-card{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat-card .label{ font-size: 12px; color: var(--text-dim); font-family:'JetBrains Mono', monospace; margin-bottom: 6px; }
+  .stat-card .value{ font-family:'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
+  .stat-row{
+    display:flex; align-items:center; justify-content:space-between; padding: 10px 14px;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .stat-row:last-child{ border-bottom:none; }
+  .stat-table{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow:hidden; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">A</div>
+      <div>
+        <h1>Arena</h1>
+        <div class="sub">one prompt · five minds</div>
+      </div>
+    </div>
+    <nav>
+      <button class="tab-btn active" data-tab="arena">Arena</button>
+      <button class="tab-btn" data-tab="history">History</button>
+      <button class="tab-btn" data-tab="stats">Stats</button>
+    </nav>
+    <button class="gear" id="settingsBtn" title="Provider status">⚙</button>
+  </header>
+
+  <!-- ARENA TAB -->
+  <section id="tab-arena">
+    <div class="composer">
+      <textarea id="prompt" placeholder="Enter a prompt to compare models… (Ctrl+Enter to send)"></textarea>
+      <div class="composer-bar">
+        <div class="token-count" id="tokenCount">0 tokens (est.)</div>
+        <div class="composer-actions">
+          <button class="btn" id="resetBtn">Reset</button>
+          <button class="btn primary" id="sendBtn">↗ Send</button>
+        </div>
+      </div>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h3>
-<a id="hello-im-marcos-martinez-nice-to-meet-you-" class="anchor" href="#hello-im-marcos-martinez-nice-to-meet-you-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Hello, I'm Marcos Martinez, nice to meet you !.</h3>
-
-<p><img src="http://i67.tinypic.com/2vjviw7.jpg" alt=""></p>
-
-<p>I am an IT consultant blah blah blah</p>
-      </section>
+    <div id="resultsArea">
+      <div class="empty" id="emptyState">
+        <div class="icon">✦</div>
+        <h2>Awaiting instructions</h2>
+        <p>Enter a prompt above and see how Claude, ChatGPT, Gemini, Grok, and DeepSeek respond — side by side.</p>
+      </div>
+      <div class="grid" id="grid" style="display:none;"></div>
     </div>
+  </section>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
-      </footer>
+  <!-- HISTORY TAB -->
+  <section id="tab-history" style="display:none;">
+    <div class="history-toolbar">
+      <button class="btn" id="clearHistoryBtn">Clear history</button>
     </div>
+    <div id="historyList"></div>
+  </section>
 
-    
+  <!-- STATS TAB -->
+  <section id="tab-stats" style="display:none;">
+    <div class="stats-grid" id="statsCards"></div>
+    <div class="stat-table" id="statsTable"></div>
+  </section>
 
-  </body>
+</div>
+
+<!-- SETTINGS / STATUS MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Provider status</h3>
+    <p class="note">
+      API keys live on the server (set as environment variables), never in the browser.
+      A model showing "missing key" means that provider's environment variable isn't set —
+      see the README for setup. Other models will still work normally.
+    </p>
+    <div id="statusList"><div class="status-row"><span class="name">Loading…</span></div></div>
+    <div class="modal-actions">
+      <button class="btn" id="closeModal">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = {
+  claude: 'var(--claude)',
+  openai: 'var(--openai)',
+  gemini: 'var(--gemini)',
+  grok: 'var(--grok)',
+  deepseek: 'var(--deepseek)',
+};
+
+let MODELS = []; // populated from /api/config
+let CONFIGURED = {};
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['arena','history','stats'].forEach(t=>{
+      document.getElementById('tab-'+t).style.display = (t===btn.dataset.tab)?'block':'none';
+    });
+    if(btn.dataset.tab==='history') renderHistory();
+    if(btn.dataset.tab==='stats') renderStats();
+  });
+});
+
+// ---------- Settings / status modal ----------
+const modal = document.getElementById('modalBackdrop');
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  renderStatus();
+  modal.classList.add('open');
+});
+document.getElementById('closeModal').addEventListener('click', ()=> modal.classList.remove('open'));
+modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.classList.remove('open'); });
+
+function renderStatus(){
+  const el = document.getElementById('statusList');
+  el.innerHTML = MODELS.map(m=>{
+    const ok = CONFIGURED[m.id];
+    return `
+      <div class="status-row">
+        <span class="name"><span class="dot" style="background:${COLORS[m.id]}; display:inline-block; margin-right:4px;"></span>${m.name}</span>
+        <span class="status-pill ${ok?'ok':'missing'}">${ok?'connected':'missing key'}</span>
+      </div>`;
+  }).join('');
+}
+
+// ---------- Token estimate ----------
+const promptEl = document.getElementById('prompt');
+promptEl.addEventListener('input', ()=>{
+  const text = promptEl.value;
+  const est = Math.max(0, Math.round(text.trim().split(/\s+/).filter(Boolean).length * 1.3));
+  document.getElementById('tokenCount').textContent = est + ' tokens (est.)';
+});
+promptEl.addEventListener('keydown', (e)=>{
+  if(e.ctrlKey && e.key==='Enter') sendPrompt();
+});
+
+// ---------- Reset ----------
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  promptEl.value='';
+  document.getElementById('tokenCount').textContent='0 tokens (est.)';
+  document.getElementById('grid').style.display='none';
+  document.getElementById('emptyState').style.display='block';
+  document.getElementById('grid').innerHTML='';
+});
+
+document.getElementById('sendBtn').addEventListener('click', sendPrompt);
+
+// ---------- Send ----------
+async function sendPrompt(){
+  const prompt = promptEl.value.trim();
+  if(!prompt) return;
+
+  document.getElementById('emptyState').style.display='none';
+  const grid = document.getElementById('grid');
+  grid.style.display='grid';
+  grid.innerHTML='';
+
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+
+  const timers = {};
+
+  MODELS.forEach(m=>{
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML = `
+      <div class="card-head">
+        <div class="name"><span class="dot" style="background:${COLORS[m.id]}"></span>${m.name}</div>
+        <div class="timer live" id="timer-${m.id}"><span class="pulse"></span><span>0.0s</span></div>
+      </div>
+      <div class="progress running" id="progress-${m.id}"><div class="fill" style="background:${COLORS[m.id]}"></div></div>
+      <div class="card-body placeholder" id="body-${m.id}">Waiting…</div>
+    `;
+    grid.appendChild(card);
+
+    const start = performance.now();
+    timers[m.id] = setInterval(()=>{
+      const elapsed = ((performance.now()-start)/1000).toFixed(1);
+      const timerEl = document.getElementById('timer-'+m.id);
+      if(timerEl) timerEl.querySelector('span:last-child').textContent = elapsed+'s';
+    }, 100);
+  });
+
+  const finishCard = (payload)=>{
+    clearInterval(timers[payload.model]);
+    const timerEl = document.getElementById('timer-'+payload.model);
+    const progEl = document.getElementById('progress-'+payload.model);
+    const bodyEl = document.getElementById('body-'+payload.model);
+    if(timerEl){
+      timerEl.classList.remove('live');
+      timerEl.querySelector('span:last-child').textContent = payload.time.toFixed(1)+'s';
+    }
+    if(progEl) progEl.classList.remove('running');
+    if(bodyEl){
+      bodyEl.className = 'card-body' + (payload.error ? ' error' : '');
+      bodyEl.textContent = payload.text;
+    }
+  };
+
+  try{
+    const res = await fetch('/api/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    if(!res.ok || !res.body){
+      const err = await res.json().catch(()=>({error:'Request failed.'}));
+      throw new Error(err.error || 'Request failed.');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for(const line of lines){
+        if(!line.trim()) continue;
+        try{ finishCard(JSON.parse(line)); }catch(e){ /* ignore malformed line */ }
+      }
+    }
+    if(buffer.trim()){
+      try{ finishCard(JSON.parse(buffer)); }catch(e){}
+    }
+  }catch(err){
+    MODELS.forEach(m=>{
+      const bodyEl = document.getElementById('body-'+m.id);
+      if(bodyEl && bodyEl.classList.contains('placeholder')){
+        clearInterval(timers[m.id]);
+        const timerEl = document.getElementById('timer-'+m.id);
+        const progEl = document.getElementById('progress-'+m.id);
+        if(timerEl) timerEl.classList.remove('live');
+        if(progEl) progEl.classList.remove('running');
+        bodyEl.className = 'card-body error';
+        bodyEl.textContent = 'Connection error: ' + err.message;
+      }
+    });
+  }
+
+  sendBtn.disabled = false;
+}
+
+// ---------- History ----------
+async function renderHistory(){
+  const el = document.getElementById('historyList');
+  el.innerHTML = `<div class="empty"><div class="icon">⌛</div><h2>Loading…</h2><p></p></div>`;
+  let rows = [];
+  try{
+    rows = await (await fetch('/api/history?limit=25')).json();
+  }catch(e){}
+
+  if(rows.length===0){
+    el.innerHTML = `<div class="empty"><div class="icon">⌛</div><h2>No history yet</h2><p>Prompts you send in the Arena will show up here.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = rows.map(h=>{
+    const okResults = MODELS.map(m=>h.results[m.id]).filter(r=>r && !r.error);
+    const fastest = okResults.sort((a,b)=>a.time-b.time)[0];
+    const date = new Date(h.created_at);
+    return `
+      <div class="history-item">
+        <div class="prompt">${escapeHtml(h.prompt)}</div>
+        <div class="meta">
+          <span>${date.toLocaleString()}</span>
+          ${fastest ? `<span>fastest: ${fastest.time.toFixed(1)}s</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('clearHistoryBtn').addEventListener('click', async ()=>{
+  if(!confirm('Clear all saved prompt history? This cannot be undone.')) return;
+  await fetch('/api/history', { method:'DELETE' });
+  renderHistory();
+});
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- Stats ----------
+async function renderStats(){
+  let data = { total: 0, models: {} };
+  try{
+    data = await (await fetch('/api/stats')).json();
+  }catch(e){}
+
+  const cards = document.getElementById('statsCards');
+  cards.innerHTML = `
+    <div class="stat-card">
+      <div class="label">total prompts</div>
+      <div class="value">${data.total}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">models compared</div>
+      <div class="value">${MODELS.length}</div>
+    </div>
+  `;
+
+  const table = document.getElementById('statsTable');
+  if(data.total===0){
+    table.innerHTML = `<div class="empty"><div class="icon">📊</div><h2>No data yet</h2><p>Send a prompt in the Arena to start collecting stats.</p></div>`;
+    return;
+  }
+  table.innerHTML = MODELS.map(m=>{
+    const s = data.models[m.id] || { ok:0, total:data.total, avg:null };
+    return `
+      <div class="stat-row">
+        <span><span class="dot" style="background:${COLORS[m.id]}; display:inline-block; margin-right:8px;"></span>${m.name}</span>
+        <span style="font-family:'JetBrains Mono',monospace; color:var(--text-dim);">
+          ${s.ok}/${s.total} ok · avg ${s.avg!==null ? s.avg.toFixed(1)+'s' : '—'}
+        </span>
+      </div>`;
+  }).join('');
+}
+
+// ---------- Init ----------
+(async function init(){
+  try{
+    const cfg = await (await fetch('/api/config')).json();
+    MODELS = cfg.models;
+    CONFIGURED = cfg.configured;
+  }catch(e){
+    // Fallback list if /api/config can't be reached
+    MODELS = [
+      {id:'claude',name:'Claude'},{id:'openai',name:'ChatGPT'},
+      {id:'gemini',name:'Gemini'},{id:'grok',name:'Grok'},{id:'deepseek',name:'DeepSeek'}
+    ];
+    CONFIGURED = {};
+  }
+})();
+</script>
+</body>
 </html>

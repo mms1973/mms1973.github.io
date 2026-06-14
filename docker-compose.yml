@@ -1,0 +1,13 @@
+services:
+  arena:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - backend/.env
+    volumes:
+      - arena-data:/app/backend/data
+    restart: unless-stopped
+
+volumes:
+  arena-data:
